@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
-http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
     <http:listener-config name="pointservice-httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="8081" />
     </http:listener-config>
@@ -8,17 +9,18 @@ http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/cu
     <db:config name="MuSQLDatabase_Config" doc:name="Database Config" doc:id="521f6047-0d04-4211-9c1b-d0378e758251">
         <db:my-sql-connection host="cloud-services.demos.mulesoft.com" port="30211" user="MuleDemo" password="MuleWorkShop-2023" database="demodb" />
     </db:config>
-    <flow name="pointservice-main">
+	<api-gateway:autodiscovery apiId="20144441" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="2dc4dfe9-d6bc-4cbc-8ccb-20f49c852be7" flowRef="pointservice-main" />
+	<flow name="pointservice-main">
         <http:listener config-ref="pointservice-httpListenerConfig" path="/api/*">
-            <http:response statusCode="#[vars.httpStatus default 200]">
-                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            <http:response statusCode="#[vars.httpStatus default 200&#93;">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
             </http:response>
-            <http:error-response statusCode="#[vars.httpStatus default 500]">
-                <http:body>#[payload]</http:body>
-                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            <http:error-response statusCode="#[vars.httpStatus default 500&#93;">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
             </http:error-response>
         </http:listener>
-        <apikit:router config-ref="pointservice-config" />
+		<apikit:router config-ref="pointservice-config" />
         <error-handler>
             <on-error-propagate type="APIKIT:BAD_REQUEST">
                 <ee:transform doc:name="Transform Message">
@@ -128,19 +130,19 @@ output application/json
         </error-handler>
     </flow>
 	<flow name="get:\point\(memberId):pointservice-config" doc:id="a9b05e4f-00d0-4c4c-b154-968cb20d26b7" >
-		<ee:transform doc:name="Transform Message" doc:id="221f68e0-23d7-4cdc-b946-7d3be2b76e96" >
+		<ee:transform doc:name="URI ParamのメンバID取出" doc:id="221f68e0-23d7-4cdc-b946-7d3be2b76e96" >
 			<ee:variables >
 				<ee:set-variable variableName="memberId" ><![CDATA[attributes.uriParams.'memberId']]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
 		<logger level="INFO" doc:name="Logger" doc:id="43e6becf-fb0d-47c6-96f0-6e6bd7d2cd23" message="get:\point\(memberId):pointservice-config" />
-		<db:query-single doc:id="55393e3d-5e47-4d51-beff-d445f63ecbe6" config-ref="MuSQLDatabase_Config" doc:name="Query single" >
+		<db:query-single doc:id="55393e3d-5e47-4d51-beff-d445f63ecbe6" config-ref="MuSQLDatabase_Config" doc:name="指定メンバIDでpoint TBL検索" >
 			<db:sql ><![CDATA[select * from point where memberId = :memberId]]></db:sql>
 			<db:input-parameters ><![CDATA[#[memberId : vars.memberId]]]></db:input-parameters>
 		</db:query-single>
-		<choice doc:name="Choice" doc:id="37492d67-7527-4115-b319-543ff6242618" >
+		<choice doc:name="結果有無判定" doc:id="37492d67-7527-4115-b319-543ff6242618" >
 			<when expression="#[!isEmpty(payload)]" >
-				<ee:transform doc:name="Transform Message" doc:id="beed2c41-2582-45a0-889f-0493c1be616a" >
+				<ee:transform doc:name="レスポンスへマッピング" doc:id="beed2c41-2582-45a0-889f-0493c1be616a" >
 					<ee:message >
 						<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -156,19 +158,26 @@ output application/json
 				</ee:transform>
 			</when>
 			<otherwise >
-				<set-variable value="204" doc:name="Set Variable" doc:id="b4482da8-5274-43db-bdf8-1e55c2210f44" variableName="httpStatus" />
+				<choice doc:name="Choice" doc:id="8923dee7-a48c-4a0d-abc0-5bcade757fbb" >
+					<when expression='#[vars.memberId == "9999-9999-9999-9999"]'>
+						<raise-error doc:name="試験用のダミーエラー発行" doc:id="000c43a6-2ec9-441d-b4cf-8060da4f8755" type="APP:DUMMY" description="Dummy Exception"/>
+					</when>
+					<otherwise >
+						<set-variable value="204" doc:name="HTTPレスポンス 204セット" doc:id="b4482da8-5274-43db-bdf8-1e55c2210f44" variableName="httpStatus" />
+					</otherwise>
+				</choice>
 			</otherwise>
 		</choice>
 	</flow>
 	<flow name="post:\point\(memberId):application\json:pointservice-config" doc:id="02d40804-d7c8-4a74-ab04-57602322a4b3" >
-		<ee:transform doc:name="Transform Message" doc:id="27c03141-c8ad-488d-85a1-be480d3a1514" >
+		<ee:transform doc:name="URI ParamのメンバID取出" doc:id="27c03141-c8ad-488d-85a1-be480d3a1514" >
 			<ee:variables >
 				<ee:set-variable variableName="memberId" ><![CDATA[attributes.uriParams.'memberId']]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
 		<logger level="INFO" doc:name="Logger" doc:id="de094e13-9e5c-4203-8859-c7cb47054029" message="post:\point\(memberId):application\json:pointservice-config" />
-		<try doc:name="Try" doc:id="bdc22ec8-f678-401c-8a16-0b0abff3e17d" transactionalAction="ALWAYS_BEGIN" >
-			<db:insert doc:id="d684afea-bb90-4226-bd69-13429e1c20fc" config-ref="MuSQLDatabase_Config" doc:name="Insert" >
+		<try doc:name="トランザクションブロック" doc:id="bdc22ec8-f678-401c-8a16-0b0abff3e17d" transactionalAction="ALWAYS_BEGIN" >
+			<db:insert doc:id="d684afea-bb90-4226-bd69-13429e1c20fc" config-ref="MuSQLDatabase_Config" doc:name="指定情報でpoint TBL追加" >
 				<db:sql ><![CDATA[insert into point (memberId, point, firstName, lastName, creationDate, lastModificationDate)
 values ( :memberId, :point, :firstName, :lastName, :creationDate, :lastModificationDate);]]></db:sql>
 				<db:input-parameters ><![CDATA[#[{ 
@@ -180,16 +189,16 @@ values ( :memberId, :point, :firstName, :lastName, :creationDate, :lastModificat
 	lastModificationDate: now() as String {format: "uuuu-MM-dd"}
 }]]]></db:input-parameters>
 			</db:insert>
-			<db:query-single doc:id="dde7f324-d9a1-49b3-bac9-4b9cbab95f23" config-ref="MuSQLDatabase_Config" doc:name="Query single" >
+			<db:query-single doc:id="dde7f324-d9a1-49b3-bac9-4b9cbab95f23" config-ref="MuSQLDatabase_Config" doc:name="追加行のIndex取出" >
 				<db:sql ><![CDATA[SELECT id FROM point ORDER BY id DESC LIMIT 1;]]></db:sql>
 			</db:query-single>
-			<set-variable value="#[payload.id]" doc:name="Set Variable" doc:id="66e46017-ff18-4f0f-a2b3-f19c00240d7d" variableName="insertId" />
+			<set-variable value="#[payload.id]" doc:name="Index値をinsertIdに保存" doc:id="66e46017-ff18-4f0f-a2b3-f19c00240d7d" variableName="insertId" />
 			<logger level="INFO" doc:name="Logger" doc:id="930c20d2-d1f2-48f4-8f83-0d5239d51c84" message="#[vars.insertId]" />
-			<db:query-single doc:id="7aa23e1c-8782-4d53-abaf-e38163ae65a9" config-ref="MuSQLDatabase_Config" doc:name="Query single1" >
+			<db:query-single doc:id="7aa23e1c-8782-4d53-abaf-e38163ae65a9" config-ref="MuSQLDatabase_Config" doc:name="insertIdで再検索" >
 				<db:sql ><![CDATA[select * from point where id = :id]]></db:sql>
 				<db:input-parameters ><![CDATA[#[id: vars.insertId]]]></db:input-parameters>
 			</db:query-single>
-			<ee:transform doc:name="Transform Message" doc:id="b7db3be0-c2ce-4db7-8ead-0e3a55ff4301" >
+			<ee:transform doc:name="結果をレスポンスにマッピング" doc:id="b7db3be0-c2ce-4db7-8ead-0e3a55ff4301" >
 				<ee:message >
 					<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -206,20 +215,20 @@ output application/json
 		</try>
 	</flow>
 	<flow name="patch:\point\(memberId):application\json:pointservice-config" doc:id="2b23c762-05cc-41c4-a154-806dcece5b3b" >
-		<ee:transform doc:name="Transform Message" doc:id="03796e01-e73b-4a45-8c7b-49e84720ee53" >
+		<ee:transform doc:name="URI ParamのメンバID取出" doc:id="03796e01-e73b-4a45-8c7b-49e84720ee53" >
 			<ee:variables >
 				<ee:set-variable variableName="memberId" ><![CDATA[attributes.uriParams.'memberId']]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
 		<logger level="INFO" doc:name="Logger" doc:id="8379581c-7043-411c-acf3-271a0ae2ebb3" message="patch:\point\(memberId):application\json:pointservice-config" />
-		<db:query-single doc:id="9da3cd4f-c9ff-4b6e-aaf2-3491bcc142d5" config-ref="MuSQLDatabase_Config" doc:name="Query single" >
+		<db:query-single doc:id="9da3cd4f-c9ff-4b6e-aaf2-3491bcc142d5" config-ref="MuSQLDatabase_Config" doc:name="指定メンバの情報検索" >
 			<db:sql ><![CDATA[select * from point where memberId = :memberId]]></db:sql>
 			<db:input-parameters ><![CDATA[#[memberId : vars.memberId]]]></db:input-parameters>
 		</db:query-single>
-		<choice doc:name="Choice" doc:id="24f82a64-4128-4b51-803a-dc02ea8308c7" >
+		<choice doc:name="結果有無判定" doc:id="24f82a64-4128-4b51-803a-dc02ea8308c7" >
 			<when expression="#[!isEmpty(payload)]" >
 				<try doc:name="Try" doc:id="42eab9f3-50ae-4447-aee4-9538891c3ae7" transactionalAction="ALWAYS_BEGIN" >
-					<db:update doc:id="9026d051-7708-4d1e-84a1-5802887e3a9a" config-ref="MuSQLDatabase_Config" doc:name="Update" >
+					<db:update doc:id="9026d051-7708-4d1e-84a1-5802887e3a9a" config-ref="MuSQLDatabase_Config" doc:name="指定のポイント値でポイントを更新" >
 						<db:sql ><![CDATA[update point set point=:point, lastModificationDate=:lastModificationDate 
 where memberId=:memberId]]></db:sql>
 						<db:input-parameters ><![CDATA[#[{ 
@@ -228,11 +237,11 @@ where memberId=:memberId]]></db:sql>
 	lastModificationDate: now() as String {format: "uuuu-MM-dd"}
 }]]]></db:input-parameters>
 					</db:update>
-					<db:query-single doc:id="07eaa87a-6df8-4e21-8f8a-d1d007a95768" config-ref="MuSQLDatabase_Config" doc:name="Query single" >
+					<db:query-single doc:id="07eaa87a-6df8-4e21-8f8a-d1d007a95768" config-ref="MuSQLDatabase_Config" doc:name="更新行を再度検索" >
 						<db:sql ><![CDATA[SELECT * FROM point where memberId = :memberId;]]></db:sql>
 						<db:input-parameters ><![CDATA[#[memberId: vars.memberId]]]></db:input-parameters>
 					</db:query-single>
-					<ee:transform doc:name="Transform Message" doc:id="70ff38f4-6a45-4f20-8810-bc74c4846052" >
+					<ee:transform doc:name="結果をレスポンスにマッピング" doc:id="70ff38f4-6a45-4f20-8810-bc74c4846052" >
 						<ee:message >
 							<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -249,7 +258,7 @@ output application/json
 				</try>
 			</when>
 			<otherwise >
-				<set-variable value="204" doc:name="Set Variable" doc:id="805d82b7-9376-46d1-8030-d8392066108d" variableName="httpStatus" />
+				<set-variable value="204" doc:name="HTTPレスポンス204設定" doc:id="805d82b7-9376-46d1-8030-d8392066108d" variableName="httpStatus" />
 			</otherwise>
 		</choice>
 	</flow>
